@@ -1,0 +1,11 @@
+@tailwind base;@tailwind components;@tailwind utilities;
+body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums;background:#F6F7FB;color:#0F172A;min-height:100vh}
+html.dark body{background:#0F1115;color:#E8EAF0}
+.card{@apply rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,.06)] ring-1 ring-slate-900/5 dark:bg-[#171A21] dark:shadow-none dark:ring-white/10}
+.inp{@apply w-full rounded-xl bg-slate-100 px-3.5 py-3 text-base text-slate-900 ring-1 ring-inset ring-transparent placeholder:text-slate-400 dark:bg-white/[0.06] dark:text-white}
+.btn{@apply min-h-[48px] rounded-xl px-4 font-semibold}
+.grad{background:linear-gradient(135deg,#6366F1,#4F46E5)}
+.gtext{color:inherit}
+.glow{box-shadow:0 8px 20px rgba(79,70,229,.35)}
+select option{color:#0F172A}
+:focus-visible{outline:2px solid #6366F1;outline-offset:2px}
