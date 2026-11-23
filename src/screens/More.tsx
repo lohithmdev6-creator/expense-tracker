@@ -1,0 +1,37 @@
+import {useEffect,useState} from 'react'
+import Papa from 'papaparse'
+import {db,loadSample,setSetting} from '../db/db'
+const T=['categories','types','vehicles','drivers','txns','settings'] as const
+async function deliver(name:string,type:string,text:string){
+ const file=new File([text],name,{type});try{if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file]});return}}catch{}
+ const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;a.click()}
+export default function More({dark,toggleDark}:{dark:boolean;toggleDark:()=>void}){
+ const [info,setInfo]=useState('');const [msg,setMsg]=useState('')
+ useEffect(()=>{(async()=>{const p=await navigator.storage?.persisted?.(),e=await navigator.storage?.estimate?.()
+  setInfo(`Persistent storage: ${p?'granted':'not granted'} · Using about ${((e?.usage||0)/1024).toFixed(0)} KB`)})()},[])
+ const run=async(f:()=>Promise<void>)=>{try{await f()}catch(e){setMsg('Something went wrong: '+e)}}
+ const backup=()=>run(async()=>{const data:any={app:'expense-tracker',version:1,exportedAt:Date.now()}
+  for(const t of T)data[t]=await (db as any)[t].toArray()
+  await deliver(`expense-backup-${new Date().toISOString().slice(0,10)}.json`,'application/json',JSON.stringify(data))
+  await setSetting('lastBackupAt',Date.now());setMsg('Backup saved.')})
+ const restore=(e:any)=>run(async()=>{const f=e.target.files[0];if(!f)return;const data=JSON.parse(await f.text())
+  if(data.app!=='expense-tracker')throw new Error('Not an Expense Tracker backup')
+  const replace=confirm('OK = Replace all current data with this backup.\nCancel = Merge into current data.')
+  if(replace){await db.transaction('rw',T.map(t=>(db as any)[t]),async()=>{for(const t of T){await (db as any)[t].clear();await (db as any)[t].bulkPut(data[t]||[])}})}
+  else{const cm:any={};for(const c of data.categories||[]){const ex=await db.categories.where('name').equals(c.name).first();cm[c.id]=ex?.id??await db.categories.add({...c,id:undefined})}
+   const tm:any={};for(const t of data.types||[]){const ex=(await db.types.toArray()).find(x=>x.name===t.name&&x.kind===t.kind&&x.categoryId===cm[t.categoryId]);tm[t.id]=ex?.id??await db.types.add({...t,id:undefined,categoryId:cm[t.categoryId]})}
+   await db.txns.bulkAdd((data.txns||[]).map((t:any)=>({...t,id:undefined,categoryId:cm[t.categoryId],typeId:tm[t.typeId],vehicleId:undefined,driverId:undefined})))}
+  setMsg('Restore complete.');e.target.value=''})
+ const csv=()=>run(async()=>{const [c,t]=[await db.categories.toArray(),await db.types.toArray()]
+  const rows=(await db.txns.orderBy('date').toArray()).map(x=>({date:x.date,kind:x.kind,category:c.find(a=>a.id===x.categoryId)?.name||'',type:t.find(a=>a.id===x.typeId)?.name||'',amount:x.amount,reason:x.reason||'',payment_mode:x.paymentMode||'',tags:(x.tags||[]).join(';'),odometer:x.odometer??'',litres:x.litres??''}))
+  await deliver('transactions.csv','text/csv',Papa.unparse(rows))})
+ const Row=({l,on,children}:any)=><button onClick={on} className="btn w-full bg-white text-left dark:bg-[#1B2427]">{l}{children}</button>
+ return <div className="space-y-3">
+  <Row l={dark?'Switch to light mode':'Switch to dark mode'} on={toggleDark}/>
+  <Row l="Back up all data (JSON)" on={backup}/>
+  <label className="btn flex w-full items-center bg-white dark:bg-[#1B2427]">Restore from backup<input type="file" accept="application/json" className="sr-only" onChange={restore}/></label>
+  <Row l="Export transactions (CSV)" on={csv}/>
+  <Row l="Load sample data" on={()=>run(async()=>{await loadSample();setMsg('Sample data added.')})}/>
+  {msg&&<p role="status" className="text-sm text-brand">{msg}</p>}
+  <p className="text-xs text-slate-500">{info}</p>
+ </div>}
