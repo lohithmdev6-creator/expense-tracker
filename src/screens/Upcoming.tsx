@@ -38,7 +38,7 @@ export default function Upcoming({onConfirm}:{onConfirm:(o:Occ,r:Rule)=>void}){
  const list=d.occ.filter(o=>o.dueDate<=addDays(today(),90)).map(o=>({o,r:d.rules.find(x=>x.id===o.ruleId)!})).filter(x=>x.r)
  const B='btn !min-h-[44px] bg-slate-100 text-sm dark:bg-white/10'
  return <div className="space-y-3">
-  <div className="flex items-center justify-between"><h2 className="text-lg font-bold">Upcoming</h2><button onClick={()=>{setErr('');setEdit({title:'',kind:'expense',amount:0,frequency:'monthly',startDate:today()})}} className="btn !min-h-[40px] grad text-sm text-white">+ New rule</button></div>
+  <div className="flex items-center justify-between"><p className="text-sm text-slate-500 dark:text-slate-400">Bills and income due soon</p><button onClick={()=>{setErr('');setEdit({title:'',kind:'expense',amount:0,frequency:'monthly',startDate:today()})}} className="btn !min-h-[40px] grad text-sm text-white">+ New rule</button></div>
   {err&&!edit&&<p role="alert" className="text-sm text-red-500">{err}</p>}
   {list.length===0&&<div className="card text-center text-slate-500">Nothing due in the next 90 days. Add a bill that repeats (rent, EMI, insurance) with + New rule, or choose Repeat when adding a transaction.</div>}
   {list.map(({o,r})=>{const n=daysBetween(today(),o.dueDate),late=n<0;return <div key={o.id} className="card space-y-3">

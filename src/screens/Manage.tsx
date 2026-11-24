@@ -14,8 +14,8 @@ export default function Manage({onBack}:{onBack:()=>void}){
  const startDel=(c:Category)=>d.counts[c.id!]?setDel({c,to:'0'}):run(async()=>{if(confirm(`Delete "${c.name}"?`)){await db.types.where('categoryId').equals(c.id!).delete();await db.categories.delete(c.id!)}})
  const doDel=()=>run(async()=>{const {c,to}=del!,dest=+to||undefined
   await db.transaction('rw',db.types,db.txns,db.categories,async()=>{await db.txns.where('categoryId').equals(c.id!).modify({categoryId:dest,typeId:undefined});await db.types.where('categoryId').equals(c.id!).delete();await db.categories.delete(c.id!)});setDel(null)})
- const Chips=({list,onAdd}:{list:any[];onAdd:()=>void})=><div className="flex flex-wrap gap-2">{list.map(t=><span key={t.id} className="flex items-center rounded-full bg-slate-500/15 text-sm"><button className="px-3 py-2" onClick={()=>rename(t)}>{t.name}</button><button aria-label={`Delete ${t.name}`} className="py-2 pr-3" onClick={()=>delType(t)}>✕</button></span>)}
-  <button onClick={onAdd} className="rounded-full border border-dashed border-brand px-3 py-2 text-sm text-brand">+ Type</button></div>
+ const Chips=({list,onAdd,onAdd2}:{list:any[];onAdd:()=>void;onAdd2?:()=>void})=><div className="flex flex-wrap gap-2">{list.map(t=><span key={t.id} className="flex items-center rounded-full bg-slate-500/15 text-sm"><button className="px-3 py-2" onClick={()=>rename(t)}>{t.kind==='income'?'💰 ':''}{t.name}</button><button aria-label={`Delete ${t.name}`} className="py-2 pr-3" onClick={()=>delType(t)}>✕</button></span>)}
+  <button onClick={onAdd} className="rounded-full border border-dashed border-brand px-3 py-2 text-sm text-brand">+ Type</button>{onAdd2&&<button onClick={onAdd2} className="rounded-full border border-dashed border-inc px-3 py-2 text-sm text-inc">+ Income type</button>}</div>
  return <div className="space-y-3">
   <button onClick={onBack} className="min-h-[48px] text-brand">← Back</button><h2 className="text-lg font-bold">Categories, types & budgets</h2>
   {err&&<p role="alert" className="text-sm text-red-500">{err}</p>}
@@ -27,9 +27,9 @@ export default function Manage({onBack}:{onBack:()=>void}){
     <button aria-label={`Delete ${c.name}`} className="h-12 w-12" onClick={()=>startDel(c)}>🗑️</button></div>
    <label className="block text-sm">Monthly budget (₹)<input inputMode="numeric" className="inp mt-1" placeholder="No budget set" defaultValue={c.budget||''} onBlur={e=>run(()=>db.categories.update(c.id!,{budget:+e.target.value.replace(/\D/g,'')||undefined}))}/></label>
    <label className="flex items-center gap-2 text-sm"><input type="checkbox" defaultChecked={!!(c.isVehicle||c.name==='Vehicle')} onChange={e=>run(()=>db.categories.update(c.id!,{isVehicle:e.target.checked}))}/>Show vehicle fields (vehicle, driver, odometer, litres)</label>
-   <Chips list={d.types.filter(t=>t.categoryId===c.id)} onAdd={()=>addType(c.id,'expense')}/></div>)}
+   <Chips list={d.types.filter(t=>t.categoryId===c.id)} onAdd={()=>addType(c.id,'expense')} onAdd2={()=>addType(c.id,'income')}/></div>)}
   <button onClick={addCat} className="btn w-full bg-brand text-white">+ New category</button>
-  <div className="card space-y-2"><div className="font-semibold">💰 Income types</div><Chips list={d.types.filter(t=>t.kind==='income')} onAdd={()=>addType(undefined,'income')}/></div>
+  <div className="card space-y-2"><div className="font-semibold">💰 General income types</div><Chips list={d.types.filter(t=>t.kind==='income'&&!t.categoryId)} onAdd={()=>addType(undefined,'income')}/></div>
   {del&&<div className="fixed inset-0 z-50 flex items-end bg-black/60 p-4"><div className="card mx-auto w-full max-w-md space-y-3 dark:bg-[#171A21]"><p>"{del.c.name}" has {d.counts[del.c.id!]} entries. Move them to:</p>
    <select aria-label="Move entries to" className="inp" value={del.to} onChange={e=>setDel({...del,to:e.target.value})}><option value="0">Uncategorised</option>{d.cats.filter(x=>x.id!==del.c.id).map(x=><option key={x.id} value={x.id}>{x.icon} {x.name}</option>)}</select>
    <div className="grid grid-cols-2 gap-2"><button className="btn bg-white dark:bg-white/10" onClick={()=>setDel(null)}>Cancel</button><button className="btn bg-red-600 text-white" onClick={doDel}>Move & delete</button></div></div></div>}

@@ -2,10 +2,12 @@ import {useEffect,useState} from 'react'
 import {deliver} from '../utils/share'
 import {exportCsv} from '../utils/export'
 import Manage from './Manage'
+import Budgets from './Budgets'
+import ImportCsv from './Import'
 import {db,loadSample,setSetting,getSetting} from '../db/db'
 const T=['categories','types','vehicles','drivers','txns','settings','rules','occ'] as const
-export default function More({dark,toggleDark}:{dark:boolean;toggleDark:()=>void}){
- const [info,setInfo]=useState('');const [msg,setMsg]=useState('');const [budget,setBudget]=useState('');const [manage,setManage]=useState(false)
+export default function More({dark,toggleDark,start}:{dark:boolean;toggleDark:()=>void;start?:string}){
+ const [info,setInfo]=useState('');const [msg,setMsg]=useState('');const [budget,setBudget]=useState('');const [manage,setManage]=useState(false);const [view,setView]=useState(start||'')
  useEffect(()=>{getSetting<number>('budget',0).then(b=>setBudget(b?String(b):''))},[])
  useEffect(()=>{(async()=>{const p=await navigator.storage?.persisted?.(),e=await navigator.storage?.estimate?.()
   setInfo(`Persistent storage: ${p?'granted':'not granted'} · Using about ${((e?.usage||0)/1024).toFixed(0)} KB`)})()},[])
@@ -24,14 +26,17 @@ export default function More({dark,toggleDark}:{dark:boolean;toggleDark:()=>void
   setMsg('Restore complete.');e.target.value=''})
  const csv=()=>run(async()=>{await exportCsv(await db.txns.orderBy('date').toArray(),{cats:await db.categories.toArray(),types:await db.types.toArray(),veh:await db.vehicles.toArray(),drv:await db.drivers.toArray()},'transactions')})
  const Row=({l,on,children}:any)=><button onClick={on} className="btn w-full bg-white text-left dark:bg-white/10">{l}{children}</button>
+ if(view==='budgets')return <Budgets onBack={()=>setView('')}/>
+ if(view==='import')return <ImportCsv onBack={()=>setView('')}/>
  if(manage)return <Manage onBack={()=>setManage(false)}/>
  return <div className="space-y-3">
-  <Row l="🗂️ Categories, types & budgets" on={()=>setManage(true)}/>
-  <label className="card block text-sm">Monthly budget (₹)<input inputMode="numeric" className="inp mt-1" placeholder="e.g. 60000" value={budget} onChange={e=>setBudget(e.target.value.replace(/\D/g,''))} onBlur={()=>setSetting('budget',+budget||0)}/></label>
-  <Row l={dark?'Switch to light mode':'Switch to dark mode'} on={toggleDark}/>
+  <Row l="💰 Budgets" on={()=>setView('budgets')}/>
+  <Row l="🗂️ Categories & types" on={()=>setManage(true)}/>
+    <Row l={dark?'Switch to light mode':'Switch to dark mode'} on={toggleDark}/>
   <Row l="Back up all data (JSON)" on={backup}/>
   <label className="btn flex w-full items-center bg-white dark:bg-white/10">Restore from backup<input type="file" accept="application/json" className="sr-only" onChange={restore}/></label>
   <Row l="Export transactions (CSV)" on={csv}/>
+  <Row l="⬆️ Import from CSV" on={()=>setView('import')}/>
   <Row l="Load sample data" on={()=>run(async()=>{await loadSample();setMsg('Sample data added.')})}/>
   {msg&&<p role="status" className="text-sm text-brand">{msg}</p>}
   <p className="text-xs text-slate-500">{info}</p>

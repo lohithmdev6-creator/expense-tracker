@@ -15,3 +15,8 @@ export function rangeFor(r:string):[string,string]{if(r.startsWith('custom:')){c
  case 'This financial year':{const sy=m>=3?y:y-1;return[`${sy}-04-01`,`${sy+1}-03-31`]}
  default:return[iso(new Date(y,m,1)),iso(new Date(y,m+1,0))]}}
 export const dayLabel=(s:string)=>new Date(s+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})
+export function prorate(monthly:number,from:string,to:string){
+ let [y,m]=from.split('-').map(Number);const [ty,tm]=to.split('-').map(Number);let total=0,partial=false
+ while(y<ty||(y===ty&&m<=tm)){const dim=new Date(y,m,0).getDate(),s=`${y}-${p(m)}-01`,e=`${y}-${p(m)}-${p(dim)}`,lo=from>s?from:s,hi=to<e?to:e,days=daysBetween(lo,hi)+1
+  total+=monthly*days/dim;if(days<dim)partial=true;m++;if(m>12){m=1;y++}}
+ return {amount:Math.round(total),partial}}

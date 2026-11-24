@@ -21,7 +21,7 @@ export async function seed(){
  const mk=(c:number,names:string[])=>names.map(name=>({categoryId:c,kind:'expense' as Kind,name}))
  await db.types.bulkAdd([...mk(v as number,['Fuel','Driver salary','Service','Insurance','Repairs','Parking/Toll','Tyres']),
   ...mk(h as number,['Rent/EMI','Electricity','Water','Groceries','Maid','Internet','Gas','Maintenance']),
-  ...['Salary','Rent received','Other'].map(name=>({kind:'income' as Kind,name}))])
+  {kind:'income' as Kind,name:'Salary'},{kind:'income' as Kind,name:'Rent received',categoryId:h as number},{kind:'income' as Kind,name:'Other'}])
  await db.vehicles.bulkAdd([{name:'Car'},{name:'Bike'}])
 }
 export async function loadSample(){
@@ -30,6 +30,7 @@ export async function loadSample(){
  const d=(k:number)=>{const x=new Date();x.setDate(x.getDate()-k);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`}
  const rows:Partial<Txn>[]=[
   {kind:'income',amount:85000,date:d(6),typeId:t('Salary'),reason:'Salary'},
+  {kind:'income',amount:12000,date:d(2),categoryId:c('Home'),typeId:t('Rent received'),reason:'Tenant rent'},
   {kind:'expense',amount:3200,date:d(5),categoryId:c('Vehicle'),typeId:t('Fuel'),litres:32,odometer:12400,paymentMode:'UPI'},
   {kind:'expense',amount:18000,date:d(4),categoryId:c('Home'),typeId:t('Rent/EMI'),paymentMode:'Bank'},
   {kind:'expense',amount:4300,date:d(3),categoryId:c('Home'),typeId:t('Groceries'),paymentMode:'Card'},
